@@ -105,6 +105,7 @@ def order(request):
 
 def site(request):
     user = UserInfo.objects.get(id=request.session['user_id'])
+    print type(user)
     if request.method=='POST':
         post=request.POST
         user.ushou=post.get('ushou')
