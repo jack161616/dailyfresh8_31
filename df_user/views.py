@@ -3,7 +3,9 @@ from django.shortcuts import render,redirect
 from models import *
 from hashlib import sha1
 from django.http import JsonResponse,HttpResponseRedirect
-
+from . import user_decorator
+from df_goods.models import *
+from django.core.paginator import Paginator,Page
 
 def register(request):
     context={'title':'用户注册'}
@@ -51,13 +53,16 @@ def login_handle(request):
     #根据用户名查询对象
     users=UserInfo.objects.filter(uname=uname)
 
-    print '-------验证-----------'
-    users2 = UserInfo.objects.all()
-    print users
+    print '==================验证--login-handle-======================-'
+    #此处只是作为学习,分清get与filter所得到的对象不一样.filter返回的是列表,get则返回一个对象
+    users2 = UserInfo.objects.get(uname=uname)
+    print 'user:',users
     print 'user2:',users2
-    print users2[0]
     print users[0].upwd
+    print users2.upwd
     print uname
+    print '==========================================================='
+
     #判断:如果未查到用户名则用户名错,如果查到则判断密码是否正确,正确则转到用户中心
     if len(users)==1:
         s1=sha1()
@@ -65,7 +70,7 @@ def login_handle(request):
         if s1.hexdigest()==users[0].upwd:
             url=request.COOKIES.get('url','/')
             red=HttpResponseRedirect(url)
-            #成功后删除转向地址,防止以后直接登录造成转向
+            #成功后删除转向地址,防止以后直接登录造成转向,,设置cookie由response设置.
             red.set_cookie('url','',max_age=-1)
             #记住用户名
             if jizhu!=0:
@@ -74,6 +79,11 @@ def login_handle(request):
                 red.set_cookie('uname','',max_age=-1)
             request.session['user_id']=users[0].id
             request.session['user_name']=uname
+
+            print '=============验证====session============='
+            print 'session["user_id"]:',request.session['user_id']
+            print 'session["user_name"]:', request.session['user_name']
+            print '=============验证====完毕============='
             return red
 
         #用户名对,密码错的情况
@@ -89,21 +99,50 @@ def login_handle(request):
 
 def logout(request):
     request.session.flush()
+    # return HttpResponseRedirect('/')
     return redirect('/')
 
+@user_decorator.login
 def info(request):
-    user_email=UserInfo.objects.get(id=request.session['user_id']).uemail
+    user=UserInfo.objects.get(id=request.session['user_id'])
+
+    print '==========验证===user==================='
+    #只是为了验证filter与get得到的user对象取值一样.
+    user_uname = user.uname
+    user2=UserInfo.objects.filter(uname=user_uname)
+    print 'user:',user.uname
+    print 'user2:',user2[0].uname,user2[0].uaddress
+
+    goods22=GoodsInfo.objects.get(id=2)
+    type11=goods22.gtype.goodsinfo_set.get(id=2)
+    print 'goods22:',goods22
+    print 'type11:',type11
+    print '==========验证===完毕==================='
+
+    # user_name=UserInfo.objects.get(id=request.session['user_id']).uname
+    # user_address=
     #最近浏览
     goods_list=[]
     goods_ids=request.COOKIES.get('goods_ids','')
+    if goods_ids != '':
+        goods_ids1=goods_ids.split(',') #分成列表[,]
+        for goods_id in goods_ids1:
+            goods_list.append(GoodsInfo.objects.get(id=int(goods_id))) #这边就返回了商品对象
 
+    print 'goods_list:',goods_list
 
-    return render(request,'df_user/user_center_info.html')
+    content={'title':'用户中心','user':user,
+             'page_name':1,'goods_list':goods_list,
+             }
+    return render(request,'df_user/user_center_info.html',content)
 
+@user_decorator.login
 def order(request):
     return render(request,'df_user/user_center_order.html')
 
+@user_decorator.login
 def site(request):
+    print 'session',request.session['user_id']
     user = UserInfo.objects.get(id=request.session['user_id'])
     print type(user)
     if request.method=='POST':
@@ -114,7 +153,7 @@ def site(request):
         user.uphone=post.get('uphone')
         user.save()
     context={'title':'用户中心','user':user}
-    return render(request,'df_user/user_center_site.html',context)
+    return render(request,'df_user/user_center_site.html')
 
 
 

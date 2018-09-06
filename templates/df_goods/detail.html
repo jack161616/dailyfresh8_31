@@ -16,10 +16,11 @@
         $('.num_show').val(num-1);
         $('.num_show').blur();
     }
-
+{#        目的是当 输入框 失去焦点的时候,完成价格计算#}
     $(function () {
         $('.num_show').blur(function () {
-            num=parseFloat($('.num_show').val());
+{#            限制购买的数量只能为整数#}
+            num=parseInt($('.num_show').val());
             if(num<1){
                 num=1;
             }

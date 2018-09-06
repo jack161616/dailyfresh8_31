@@ -71,8 +71,30 @@ def detail(request,gid):
     context={'title':goods.gtype.ttitle,'g':goods,
              'news':news,'gid':gid,
             }
+    response =  render(request,'df_goods/detail.html',context)
+    # 记录最近浏览记录,在用户中心使用
+    goods_ids=request.COOKIES.get('goods_ids','')
+    goods_id='%d'%goods.id
+    if goods_ids!='':   #判断是否有浏览记录,如有则继续判断
+        goods_ids1=goods_ids.split(',') #拆分为列表
+        if goods_ids1.count(goods_id)>=1:   #如果商品已经被记录,则删除
+            goods_ids1.remove(goods_id)
+        goods_ids1.insert(0,goods_id)  #删除后置于列表第一个是为了让他处于浏览最新记录状态
+        if len(goods_ids1)>=6: # 只保留最新5个浏览记录
+            del goods_ids1[5]
+        goods_ids=','.join(goods_ids1) #重新拼接为字符串,
+    else:
+        goods_ids=goods_id #如果没有浏览记录,则直接添加
+    response.set_cookie('goods_ids',goods_ids)
 
-    return render(request,'df_goods/detail.html',context)
+    print '===========验证==COOKIE======================'
+    print 'goods_ids:',goods_ids
+    print 'goods_id:',goods_id
+    print 'goods_id1:',goods_ids1
+    print '=================================================='
+
+    return response
+
 
 
 
