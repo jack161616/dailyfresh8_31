@@ -5,6 +5,7 @@ from hashlib import sha1
 from django.http import JsonResponse,HttpResponseRedirect
 from . import user_decorator
 from df_goods.models import *
+from df_order.models import *
 from django.core.paginator import Paginator,Page
 
 def register(request):
@@ -56,11 +57,13 @@ def login_handle(request):
     print '==================验证--login-handle-======================-'
     #此处只是作为学习,分清get与filter所得到的对象不一样.filter返回的是列表,get则返回一个对象
     users2 = UserInfo.objects.get(uname=uname)
-    print 'user:',users
+    print 'user:',users,',len_user:',len(users)
     print 'user2:',users2
     print users[0].upwd
     print users2.upwd
     print uname
+    # users2.delete()  #delete 在对于 users和users2的使用结果不同.
+    # print 'delete_users2_pwd:',users2.upwd
     print '==========================================================='
 
     #判断:如果未查到用户名则用户名错,如果查到则判断密码是否正确,正确则转到用户中心
@@ -68,7 +71,8 @@ def login_handle(request):
         s1=sha1()
         s1.update(upwd)
         if s1.hexdigest()==users[0].upwd:
-            url=request.COOKIES.get('url','/')
+            url=request.COOKIES.get('url','/')  # 承接登录验证的 转向 url地址.
+            # print 'url:',url
             red=HttpResponseRedirect(url)
             #成功后删除转向地址,防止以后直接登录造成转向,,设置cookie由response设置.
             red.set_cookie('url','',max_age=-1)
@@ -137,8 +141,18 @@ def info(request):
     return render(request,'df_user/user_center_info.html',content)
 
 @user_decorator.login
-def order(request):
-    return render(request,'df_user/user_center_order.html')
+def order(request,pindex):
+    order_list = OrderInfo.objects.filter(user_id=request.session['user_id']).order_by('-oid')
+    paginator = Paginator(order_list, 2)
+    if pindex == '':
+        pindex = '1'
+    page = paginator.page(int(pindex))
+
+    context = {'title': '用户中心',
+               'page_name': 1,
+               'paginator': paginator,
+               'page': page, }
+    return render(request,'df_user/user_center_order.html',context)
 
 @user_decorator.login
 def site(request):
@@ -152,9 +166,10 @@ def site(request):
         user.uyoubian=post.get('uyoubian')
         user.uphone=post.get('uphone')
         user.save()
-    context={'title':'用户中心','user':user}
-    return render(request,'df_user/user_center_site.html')
-
+    context={'title':'用户中心','user':user,'page_name':1}
+    return render(request,'df_user/user_center_site.html',context)
+    # return redirect(request.get_full_path())
+    # return HttpResponseRedirect(request.COOKIES.get('url','/'))
 
 
 
