@@ -21,20 +21,30 @@ def cart(request):
 def add(request,gid,count):
     #用户uid购买了gid商品,数量为count
     uid=request.session['user_id']
-    gid=int(gid)
+    # gid=int(gid)
     count=int(count)
     #查询购物车是否已经有此商品,如果有则数量增加,如果没有则新增,
-    carts=CartInfo.objects.filter(user_id=uid,goods_id=gid)
-    carts1 = CartInfo.objects.filter(user=int(uid), goods=int(uid))
     print '========add_cart=================='
-    print 'carts:',carts[0]
-    print 'carts_count:',carts[0].count
-    print 'carts1:',carts1[0]
-    print 'carts1_goods:',carts1[0].goods.gjianjie
+    carts=CartInfo.objects.filter(user_id=uid,goods_id=int(gid))
+    carts1 = CartInfo.objects.filter(user_id=int(uid), goods_id=gid)
+    carts2 = CartInfo.objects.filter(user=int(uid), goods=int(gid))
+    #三种都可以读出值出来,那么区别在哪里呢
+    print 'uid:',uid,'---','gid:',gid
+
+    if len(carts)>=1:
+        print 'carts:',carts[0]
+        print 'carts_count:',carts[0].count
+    if len(carts1) >= 1:
+        print 'carts1:',carts1[0]
+        print 'carts1_goods:',carts1[0].goods.gjianjie
+
+    if len(carts2)>=1:
+        print 'carts2',carts2
+        print 'carts2_goods:', carts2[0].goods.gjianjie
     print '========add_cart=================='
     if len(carts)>=1:
         cart=carts[0]
-        cart.count=cart.count+count
+        # cart.count=cart.count+count
     else:
         cart=CartInfo()
         cart.user_id=uid

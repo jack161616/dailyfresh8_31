@@ -107,9 +107,10 @@ def order(request):
 #
 #     return redirect('/user/order/')
 
+@transaction.atomic()
 @user_decorator.login
 def order_handle(request):
-    # tran_id=transaction.savepoint()
+    tran_id=transaction.savepoint()
     #接收购物车编号
     cart_ids=request.POST.get('cart_ids')#5,6
     try:
@@ -162,10 +163,10 @@ def order_handle(request):
         # 保存总价
         order.ototal=total+10
         order.save()
-        # transaction.savepoint_commit(tran_id)
+        transaction.savepoint_commit(tran_id)
     except Exception as e:
         print '================%s'%e
-        # transaction.savepoint_rollback(tran_id)
+        transaction.savepoint_rollback(tran_id)
 
     # return HttpResponse('ok')
     return redirect('/user/order/')
